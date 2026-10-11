@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% if who == "municipality" %}Municipality sign in{% elif who == "owner" %}House owner sign in{% else %}Sign in with password{% endif %} - Water monitor</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body><main class="login">
+{% if who == "municipality" %}
+<h1>Municipality sign in</h1><p>For municipality staff. The user name is <b>municipality</b>.</p>
+{% elif who == "owner" %}
+<h1>House owner sign in</h1><p>Use your user name (<b>user1</b>, <b>user2</b> and so on) and the password given to you.</p>
+{% else %}
+<h1>Sign in with password</h1><p>Municipality staff use <b>municipality</b>. House owners use <b>user1</b>, <b>user2</b> and so on.</p>
+{% endif %}
+<form method="post">
+<label for="u">Username</label><input id="u" name="username" autocomplete="username" required {% if who == "municipality" %}value="municipality"{% else %}autofocus{% endif %} {% if who == "owner" %}placeholder="user3"{% endif %}>
+<label for="p">Password</label><input id="p" name="password" type="password" autocomplete="current-password" required {% if who == "municipality" %}autofocus{% endif %}>
+{% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+<p><button class="primary" type="submit">Sign in</button></p>
+</form>
+{% if who != "municipality" %}<p class="hint"><a href="{{ url_for('staff_login', who='municipality') }}">Municipality sign in</a></p>{% endif %}
+{% if who != "owner" %}<p class="hint"><a href="{{ url_for('staff_login', who='owner') }}">House owner: sign in with username and password</a></p>{% endif %}
+<p class="hint"><a href="{{ url_for('login') }}">House owner: sign in with mobile number (OTP)</a></p>
+</main></body></html>

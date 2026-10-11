@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My water - Water monitor</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body>
+<header class="top"><h1>Water monitor</h1><nav><span>{{ name }}</span><a href="{{ url_for('logout') }}">Sign out</a></nav></header>
+<main>
+<div id="banner" class="banner s-normal" role="status" aria-live="polite"><div class="state">Loading...</div><div class="detail"></div></div>
+<p class="hint" id="note"></p>
+<h2>Live readings</h2>
+<div class="grid2">
+  <div class="panel stat"><div class="label">Pressure</div><div class="value"><span id="pv">-</span><span class="unit" id="pu"></span></div>
+    <svg id="pChart" viewBox="0 0 300 80" preserveAspectRatio="none" role="img" aria-label="Pressure over the last readings"></svg></div>
+  <div class="panel stat"><div class="label">Flow</div><div class="value"><span id="fv">-</span><span class="unit" id="fu"></span></div>
+    <svg id="fChart" viewBox="0 0 300 80" preserveAspectRatio="none" role="img" aria-label="Flow over the last readings"></svg></div>
+</div>
+<h2>Alerts sent to you</h2>
+<div class="panel"><ul class="log" id="log"></ul></div>
+</main>
+<script>
+const TEXT={normal:"Your water supply is normal",possible_leak:"Possible leak at your property",no_supply:"No water supply at your property"};
+function spark(id,vals){
+  const el=document.getElementById(id);
+  if(!vals.length){el.innerHTML="";return;}
+  const w=300,h=80,max=Math.max(...vals,1);
+  const pts=vals.map((v,i)=>{const x=vals.length>1?i*w/(vals.length-1):0;const y=h-4-(v/max)*(h-8);return x.toFixed(1)+","+y.toFixed(1)}).join(" ");
+  el.innerHTML='<polyline fill="none" stroke="#1B6F8A" stroke-width="2" vector-effect="non-scaling-stroke" points="'+pts+'"/>';
+}
+function note(t){document.getElementById("note").textContent=t;}
+async function load(){
+  let d;
+  try{
+    const r=await fetch("/api/me/status");
+    if(r.status===401){location="/login";return;}
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    d=await r.json();
+  }catch(e){note("Connection problem, retrying...");return;}
+  const h=d.house;
+  note("Live. Last updated "+new Date().toLocaleTimeString());
+  const b=document.getElementById("banner");
+  b.className="banner "+(h.node_online?"s-"+h.status:"s-offline");
+  b.querySelector(".state").textContent=h.node_online?TEXT[h.status]:"Sensor offline";
+  let detail=h.node_online?"":"We have not heard from your sensor recently. Readings below may be old.";
+  if(h.node_online&&h.status!=="normal")detail="Lasting about "+h.elapsed+" "+h.unit+".";
+  b.querySelector(".detail").textContent=detail;
+  document.getElementById("pu").textContent=h.pressure_unit;
+  document.getElementById("fu").textContent=h.flow_unit;
+  document.getElementById("pv").textContent=h.pressure==null?"-":h.pressure.toFixed(2);
+  document.getElementById("fv").textContent=h.flow==null?"-":h.flow.toFixed(2);
+  spark("pChart",d.history.map(x=>x.pressure));
+  spark("fChart",d.history.map(x=>x.flow));
+  const log=document.getElementById("log");log.innerHTML="";
+  if(!d.notifications.length){log.innerHTML='<li class="empty">No alerts yet.</li>';}
+  d.notifications.forEach(n=>{const li=document.createElement("li");
+    const t=document.createElement("time");t.textContent=n.sent_at+" UTC";
+    li.appendChild(t);li.appendChild(document.createTextNode(n.message));log.appendChild(li);});
+}
+load();setInterval(load,5000);
+</script></body></html>
