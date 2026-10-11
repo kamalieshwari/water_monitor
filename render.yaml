@@ -1,0 +1,39 @@
+# Render "Blueprint": Render reads this file when you connect the GitHub repo.
+services:
+  - type: web
+    name: water-monitor
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    # ONE worker only: MQTT client + escalation job run as threads inside the app
+    startCommand: gunicorn -w 1 --threads 100 --timeout 120 --bind 0.0.0.0:$PORT app:app
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEMO_SIMULATOR
+        value: "1"
+      - key: DEMO_MODE
+        value: "1"
+      - key: MQTT_PREFIX                  # only used if you switch to a real MQTT broker (DEMO_VIA_BROKER=1 or DEMO_SIMULATOR=0)
+        generateValue: true               # Render creates a unique random value for you
+      - key: MQTT_HOST
+        value: broker.hivemq.com          # public test broker; use your own broker for privacy
+      - key: MQTT_PORT
+        value: "1883"
+      - key: MQTT_TLS
+        value: "0"
+      - key: MUNICIPALITY_PASSWORD        # password for the user name "municipality"
+        sync: false
+      - key: MUNICIPALITY_PHONE           # e.g. 9876543210 (alerts are only printed in the log in console mode)
+        sync: false
+      - key: OWNER_PHONES                 # OTP login numbers, e.g. 1:9876543210,2:9123456780  (house:mobile)
+        sync: false
+      - key: OWNER_PASSWORDS              # password login, e.g. 1:river91,2:lotus44  (house:password; user name is user1, user2 ...)
+        sync: false
+      - key: PRESSURE_UNIT
+        value: psi                        # change to match your pressure sensor
+      - key: SMS_PROVIDER
+        value: console                    # console (OTP and alerts appear in the Logs tab) | twilio | msg91

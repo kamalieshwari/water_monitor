@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign in with password - Water monitor</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body><main class="login">
+<h1>Sign in with password</h1><p>Municipality staff use the username <b>municipality</b>. House owners use <b>user1</b>, <b>user2</b> and so on, with the password given to them.</p>
+<form method="post">
+<label for="u">Username</label><input id="u" name="username" autocomplete="username" required autofocus>
+<label for="p">Password</label><input id="p" name="password" type="password" autocomplete="current-password" required>
+{% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+<p><button class="primary" type="submit">Sign in</button></p>
+</form>
+<p class="hint"><a href="{{ url_for('login') }}">Sign in with mobile number (OTP)</a></p>
+</main></body></html>

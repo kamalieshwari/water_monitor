@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Street overview - Water monitor</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body>
+<header class="top"><h1>Water monitor: municipality</h1>
+<nav>{% if demo %}<a href="{{ url_for('demo_control') }}">Demo control</a>{% endif %}<span>{{ name }}</span><a href="{{ url_for('logout') }}">Sign out</a></nav></header>
+<main>
+<div class="summary" id="summary" role="status" aria-live="polite"></div>
+<p class="hint" id="note"></p>
+<h2>Houses on Sample Street</h2>
+<div class="street" id="street"></div>
+<h2>Alerts sent to the municipality</h2>
+<div class="panel"><ul class="log" id="alerts"></ul></div>
+</main>
+<script>
+const LABEL={normal:"Normal",possible_leak:"Possible leak",no_supply:"No water"};
+function tile(h){
+  const d=document.createElement("div");
+  d.className="tile "+(h.node_online?"s-"+h.status:"s-offline");
+  const b=document.createElement("b");b.textContent="House "+h.house_id;
+  const s=document.createElement("span");
+  s.textContent=h.node_online?LABEL[h.status]:"Sensor offline";
+  d.appendChild(b);d.appendChild(s);
+  if(h.node_online&&h.status!=="normal"){const e=document.createElement("span");e.textContent=h.elapsed+" {{ unit }}";d.appendChild(e);}
+  if(h.municipality_notified){const e=document.createElement("span");e.textContent="Alert sent";d.appendChild(e);}
+  d.title=h.address;return d;
+}
+function note(t){document.getElementById("note").textContent=t;}
+async function load(){
+  let d;
+  try{
+    const r=await fetch("/api/municipality/houses");
+    if(r.status===401){location="/login";return;}
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    d=await r.json();
+  }catch(e){note("Connection problem, retrying...");return;}
+  note("Live. Last updated "+new Date().toLocaleTimeString());
+  const owners=d.houses.filter(h=>h.house_id<100);
+  const street=document.getElementById("street");street.innerHTML="";
+  owners.slice(0,8).forEach(h=>street.appendChild(tile(h)));
+  const road=document.createElement("div");road.className="road";road.textContent="Sample Street";street.appendChild(road);
+  owners.slice(8).forEach(h=>street.appendChild(tile(h)));
+  const count=k=>owners.filter(h=>h.node_online&&h.status===k).length;
+  const offline=owners.filter(h=>!h.node_online).length;
+  const sm=document.getElementById("summary");sm.innerHTML="";
+  [["s-normal",count("normal")+" normal"],["s-possible_leak",count("possible_leak")+" possible leak"],
+   ["s-no_supply",count("no_supply")+" no water"],["s-offline",offline+" offline"]].forEach(([c,t])=>{
+    const s=document.createElement("span");s.className="chip "+c;s.textContent=t;sm.appendChild(s);});
+  const log=document.getElementById("alerts");log.innerHTML="";
+  if(!d.alerts.length)log.innerHTML='<li class="empty">No alerts yet. A house gets here after 6 {{ unit }} without water.</li>';
+  d.alerts.forEach(n=>{const li=document.createElement("li");const t=document.createElement("time");
+    t.textContent=n.sent_at+" UTC";li.appendChild(t);li.appendChild(document.createTextNode(n.message));log.appendChild(li);});
+}
+load();setInterval(load,5000);
+</script></body></html>

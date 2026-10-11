@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign in - Water monitor</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body><main class="login">
+<h1>Water monitor</h1>
+{% if step == "request" %}
+<p>Enter the mobile number registered for your house. We will text you a one-time password.</p>
+<form method="post">
+<input type="hidden" name="action" value="request">
+<label for="ph">Mobile number</label>
+<input id="ph" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="98765 43210" required autofocus>
+{% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+<p><button class="primary" type="submit">Send OTP</button></p>
+</form>
+{% else %}
+<p>Enter the 6-digit OTP sent to {{ masked }}. It is valid for 5 minutes.</p>
+<form method="post">
+<input type="hidden" name="action" value="verify">
+<label for="otp">One-time password</label>
+<input id="otp" name="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required autofocus>
+{% if info %}<p class="hint" role="status">{{ info }}</p>{% endif %}
+{% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+<p><button class="primary" type="submit">Sign in</button></p>
+</form>
+<p><a href="{{ url_for('login', reset=1) }}">Use a different number or send a new OTP</a></p>
+{% endif %}
+<p class="hint"><a href="{{ url_for('staff_login') }}">Sign in with username and password</a></p>
+</main></body></html>
